@@ -1,0 +1,539 @@
+{
+  "name": "Invoice automation (n8n)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "b2b2b2b2-0000-4000-8000-000000000001",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "invoices"
+        },
+        "options": {}
+      },
+      "id": "b2b2b2b2-0000-4000-8000-000000000002",
+      "name": "Get rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c3c3c3c3-0000-4000-8000-000000000001",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b2b2b2b2-0000-4000-8000-000000000003",
+      "name": "Not sent yet",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "maxItems": 10
+      },
+      "id": "b2b2b2b2-0000-4000-8000-000000000004",
+      "name": "Batch size",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "copy",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_TEMPLATE_DOC_ID"
+        },
+        "name": "=Invoice {{ $json.invoice_no }}",
+        "sameFolder": false,
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_FOLDER_ID"
+        },
+        "options": {}
+      },
+      "id": "b2b2b2b2-0000-4000-8000-000000000005",
+      "name": "Copy template",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $json.id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "replaceAll",
+              "text": "{{invoice_no}}",
+              "replaceText": "={{ $('One invoice at a time').item.json.invoice_no }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{date}}",
+              "replaceText": "={{ $('One invoice at a time').item.json.date }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{client_name}}",
+              "replaceText": "={{ $('One invoice at a time').item.json.client_name }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{client_email}}",
+              "replaceText": "={{ $('One invoice at a time').item.json.client_email }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{item}}",
+              "replaceText": "={{ $('One invoice at a time').item.json.item }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{amount}}",
+              "replaceText": "={{ Number($('One invoice at a time').item.json.amount).toFixed(2) }}",
+              "matchCase": true
+            }
+          ]
+        },
+        "authentication": "oAuth2"
+      },
+      "id": "b2b2b2b2-0000-4000-8000-000000000006",
+      "name": "Fill in invoice",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.documentId }}"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf"
+            }
+          },
+          "fileName": "={{ $('One invoice at a time').item.json.invoice_no }}.pdf"
+        }
+      },
+      "id": "b2b2b2b2-0000-4000-8000-000000000007",
+      "name": "Download as PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "data",
+        "name": "={{ $('One invoice at a time').item.json.invoice_no }}.pdf",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_FOLDER_ID"
+        },
+        "options": {}
+      },
+      "id": "b2b2b2b2-0000-4000-8000-000000000008",
+      "name": "Save PDF to folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1760,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('One invoice at a time').item.json.client_email }}",
+        "subject": "=Invoice {{ $('One invoice at a time').item.json.invoice_no }}",
+        "emailType": "text",
+        "message": "=Hi {{ $('One invoice at a time').item.json.client_name }},\n\nYour invoice {{ $('One invoice at a time').item.json.invoice_no }} for USD {{ Number($('One invoice at a time').item.json.amount).toFixed(2) }} is attached.\n\nThank you!",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "data"
+              }
+            ]
+          }
+        }
+      },
+      "id": "b2b2b2b2-0000-4000-8000-000000000009",
+      "name": "Email invoice",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1760,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "invoices"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "invoice_no": "={{ $('One invoice at a time').item.json.invoice_no }}",
+            "status": "sent",
+            "sent_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "invoice_no"
+          ],
+          "schema": [
+            {
+              "id": "invoice_no",
+              "displayName": "invoice_no",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sent_at",
+              "displayName": "sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2b2b2b2-0000-4000-8000-000000000010",
+      "name": "Mark as sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1980,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "invoices"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "invoice_no": "={{ $('One invoice at a time').item.json.invoice_no }}",
+            "status": "email failed",
+            "sent_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "invoice_no"
+          ],
+          "schema": [
+            {
+              "id": "invoice_no",
+              "displayName": "invoice_no",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sent_at",
+              "displayName": "sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2b2b2b2-0000-4000-8000-000000000011",
+      "name": "Mark as failed",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1980,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "b2b2b2b2-0000-4000-8000-000000000012",
+      "name": "One invoice at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        880,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Get rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get rows": {
+      "main": [
+        [
+          {
+            "node": "Not sent yet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Not sent yet": {
+      "main": [
+        [
+          {
+            "node": "Batch size",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch size": {
+      "main": [
+        [
+          {
+            "node": "One invoice at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy template": {
+      "main": [
+        [
+          {
+            "node": "Fill in invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fill in invoice": {
+      "main": [
+        [
+          {
+            "node": "Download as PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download as PDF": {
+      "main": [
+        [
+          {
+            "node": "Email invoice",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Save PDF to folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email invoice": {
+      "main": [
+        [
+          {
+            "node": "Mark as sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark as failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One invoice at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Copy template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as sent": {
+      "main": [
+        [
+          {
+            "node": "One invoice at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as failed": {
+      "main": [
+        [
+          {
+            "node": "One invoice at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "pinData": {}
+}
