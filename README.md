@@ -5,3 +5,4 @@ Free automation templates from the Tested Automations YouTube channel. Each one 
 Free to use and change for your own work. Download only from this repository.
 
 - [Invoice automation templates (Make and n8n)](001-invoice-automation/)
+- [Lead system template (Make + HubSpot + Telegram)](002-lead-system/)

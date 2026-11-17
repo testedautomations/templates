@@ -1,0 +1,633 @@
+{
+  "name": "Lead system (Make)",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": "YOUR_WEBHOOK",
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "hook",
+            "type": "hook:gateway-webhook",
+            "label": "Webhook",
+            "required": true
+          },
+          {
+            "name": "maxResults",
+            "type": "number",
+            "label": "Maximum number of results"
+          }
+        ],
+        "interface": [
+          {
+            "name": "row",
+            "type": "number"
+          },
+          {
+            "name": "name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "type": "text"
+          },
+          {
+            "name": "company",
+            "type": "text"
+          },
+          {
+            "name": "budget",
+            "type": "text"
+          },
+          {
+            "name": "message",
+            "type": "text"
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "hubspotcrm:upsertAContact",
+      "version": 2,
+      "parameters": {},
+      "mapper": {
+        "_method": "compact",
+        "swapPrimaryEmail": false,
+        "parseCustomFields": true,
+        "properties": [
+          {
+            "key": "email",
+            "value": "{{1.email}}"
+          },
+          {
+            "key": "firstname",
+            "value": "{{first(split(1.name; \" \"))}}"
+          },
+          {
+            "key": "lastname",
+            "value": "{{join(slice(split(1.name; \" \"); 1); \" \")}}"
+          },
+          {
+            "key": "company",
+            "value": "{{1.company}}"
+          },
+          {
+            "key": "lead_tier",
+            "value": "{{if(1.budget = \"over $2,000\"; \"hot\"; if(1.budget = \"$500–2,000\"; \"warm\"; \"cold\"))}}"
+          },
+          {
+            "key": "message",
+            "value": "{{1.message}}"
+          }
+        ]
+      },
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 0
+        }
+      },
+      "onerror": [
+        {
+          "id": 5,
+          "module": "google-sheets:updateRow",
+          "version": 2,
+          "parameters": {},
+          "mapper": {
+            "from": "drive",
+            "mode": "select",
+            "values": {
+              "6": "crm failed",
+              "7": "{{now}}"
+            },
+            "sheetId": "Form Responses 1",
+            "rowNumber": "{{1.row}}",
+            "spreadsheetId": "/YOUR_SPREADSHEET_ID",
+            "includesHeaders": true,
+            "useColumnHeaders": false,
+            "valueInputOption": "USER_ENTERED"
+          },
+          "metadata": {
+            "designer": {
+              "x": 600,
+              "y": 300
+            },
+            "parameters": [
+              {
+                "name": "__IMTCONN__",
+                "type": "account:google",
+                "label": "Connection",
+                "required": true
+              }
+            ],
+            "expect": [
+              {
+                "name": "mode",
+                "type": "select",
+                "label": "Search Method",
+                "required": true,
+                "validate": {
+                  "enum": [
+                    "select",
+                    "fromAll",
+                    "map"
+                  ]
+                }
+              },
+              {
+                "name": "valueInputOption",
+                "type": "select",
+                "label": "Value input option",
+                "required": true,
+                "validate": {
+                  "enum": [
+                    "USER_ENTERED",
+                    "RAW"
+                  ]
+                }
+              },
+              {
+                "name": "from",
+                "type": "select",
+                "label": "Drive",
+                "required": true,
+                "validate": {
+                  "enum": [
+                    "drive",
+                    "share",
+                    "team"
+                  ]
+                }
+              },
+              {
+                "name": "spreadsheetId",
+                "type": "file",
+                "label": "Spreadsheet Name",
+                "required": true
+              },
+              {
+                "name": "sheetId",
+                "type": "select",
+                "label": "Sheet Name",
+                "required": true
+              },
+              {
+                "name": "rowNumber",
+                "type": "uinteger",
+                "label": "Row number",
+                "required": true
+              },
+              {
+                "name": "includesHeaders",
+                "type": "select",
+                "label": "Table contains headers",
+                "required": true,
+                "validate": {
+                  "enum": [
+                    true,
+                    false
+                  ]
+                }
+              },
+              {
+                "name": "useColumnHeaders",
+                "type": "select",
+                "label": "Use column headers as IDs of the columns",
+                "required": true,
+                "validate": {
+                  "enum": [
+                    true,
+                    false
+                  ]
+                }
+              },
+              {
+                "name": "values",
+                "spec": [
+                  {
+                    "name": "0",
+                    "type": "text",
+                    "label": "Timestamp (A)"
+                  },
+                  {
+                    "name": "1",
+                    "type": "text",
+                    "label": "name (B)"
+                  },
+                  {
+                    "name": "2",
+                    "type": "text",
+                    "label": "email (C)"
+                  },
+                  {
+                    "name": "3",
+                    "type": "text",
+                    "label": "company (D)"
+                  },
+                  {
+                    "name": "4",
+                    "type": "text",
+                    "label": "budget (E)"
+                  },
+                  {
+                    "name": "5",
+                    "type": "text",
+                    "label": "message (F)"
+                  },
+                  {
+                    "name": "6",
+                    "type": "text",
+                    "label": "crm_status (G)"
+                  },
+                  {
+                    "name": "7",
+                    "type": "text",
+                    "label": "synced_at (H)"
+                  }
+                ],
+                "type": "collection",
+                "label": "Values in columns"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "module": "google-sheets:updateRow",
+      "version": 2,
+      "parameters": {},
+      "mapper": {
+        "from": "drive",
+        "mode": "select",
+        "values": {
+          "6": "{{if(parseNumber(formatDate(2.updatedAt; \"x\")) - parseNumber(formatDate(2.createdAt; \"x\")) < 2000; \"created\"; \"updated\")}}",
+          "7": "{{now}}"
+        },
+        "sheetId": "Form Responses 1",
+        "rowNumber": "{{1.row}}",
+        "spreadsheetId": "/YOUR_SPREADSHEET_ID",
+        "includesHeaders": true,
+        "useColumnHeaders": false,
+        "valueInputOption": "USER_ENTERED"
+      },
+      "metadata": {
+        "designer": {
+          "x": 600,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTCONN__",
+            "type": "account:google",
+            "label": "Connection",
+            "required": true
+          }
+        ],
+        "expect": [
+          {
+            "name": "mode",
+            "type": "select",
+            "label": "Search Method",
+            "required": true,
+            "validate": {
+              "enum": [
+                "select",
+                "fromAll",
+                "map"
+              ]
+            }
+          },
+          {
+            "name": "valueInputOption",
+            "type": "select",
+            "label": "Value input option",
+            "required": true,
+            "validate": {
+              "enum": [
+                "USER_ENTERED",
+                "RAW"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "type": "select",
+            "label": "Drive",
+            "required": true,
+            "validate": {
+              "enum": [
+                "drive",
+                "share",
+                "team"
+              ]
+            }
+          },
+          {
+            "name": "spreadsheetId",
+            "type": "file",
+            "label": "Spreadsheet Name",
+            "required": true
+          },
+          {
+            "name": "sheetId",
+            "type": "select",
+            "label": "Sheet Name",
+            "required": true
+          },
+          {
+            "name": "rowNumber",
+            "type": "uinteger",
+            "label": "Row number",
+            "required": true
+          },
+          {
+            "name": "includesHeaders",
+            "type": "select",
+            "label": "Table contains headers",
+            "required": true,
+            "validate": {
+              "enum": [
+                true,
+                false
+              ]
+            }
+          },
+          {
+            "name": "useColumnHeaders",
+            "type": "select",
+            "label": "Use column headers as IDs of the columns",
+            "required": true,
+            "validate": {
+              "enum": [
+                true,
+                false
+              ]
+            }
+          },
+          {
+            "name": "values",
+            "spec": [
+              {
+                "name": "0",
+                "type": "text",
+                "label": "Timestamp (A)"
+              },
+              {
+                "name": "1",
+                "type": "text",
+                "label": "name (B)"
+              },
+              {
+                "name": "2",
+                "type": "text",
+                "label": "email (C)"
+              },
+              {
+                "name": "3",
+                "type": "text",
+                "label": "company (D)"
+              },
+              {
+                "name": "4",
+                "type": "text",
+                "label": "budget (E)"
+              },
+              {
+                "name": "5",
+                "type": "text",
+                "label": "message (F)"
+              },
+              {
+                "name": "6",
+                "type": "text",
+                "label": "crm_status (G)"
+              },
+              {
+                "name": "7",
+                "type": "text",
+                "label": "synced_at (H)"
+              }
+            ],
+            "type": "collection",
+            "label": "Values in columns"
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "module": "util:SetVariable2",
+      "version": 1,
+      "parameters": {},
+      "filter": {
+        "name": "hot leads only",
+        "conditions": [
+          [
+            {
+              "a": "{{1.budget}}",
+              "b": "over $2,000",
+              "o": "text:equal"
+            }
+          ]
+        ]
+      },
+      "mapper": {
+        "name": "mime",
+        "scope": "roundtrip",
+        "value": "To: YOUR_EMAIL_ADDRESS{{newline}}Subject: New hot lead (row {{1.row}}){{newline}}MIME-Version: 1.0{{newline}}Content-Type: text/plain; charset=utf-8{{newline}}{{newline}}Name: {{1.name}}{{newline}}Email: {{1.email}}{{newline}}Company: {{1.company}}{{newline}}Budget: {{1.budget}}{{newline}}{{newline}}{{1.message}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 900,
+          "y": 0
+        },
+        "expect": [
+          {
+            "name": "name",
+            "type": "text",
+            "label": "Variable name",
+            "required": true
+          },
+          {
+            "name": "value",
+            "type": "any",
+            "label": "Variable value"
+          }
+        ],
+        "interface": [
+          {
+            "name": "mime",
+            "type": "any",
+            "label": "mime"
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "module": "google-email:makeAnApiCall",
+      "version": 4,
+      "parameters": {},
+      "mapper": {
+        "url": "/v1/users/me/messages/send",
+        "body": "{\"raw\":\"{{replace(replace(base64(6.mime); \"+\"; \"-\"); \"/\"; \"_\")}}\"}",
+        "method": "POST",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      },
+      "metadata": {
+        "designer": {
+          "x": 1200,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTCONN__",
+            "type": "account:google-email",
+            "label": "Connection",
+            "required": true
+          }
+        ],
+        "expect": [
+          {
+            "name": "url",
+            "type": "text",
+            "label": "URL",
+            "required": true
+          },
+          {
+            "name": "method",
+            "type": "select",
+            "label": "Method",
+            "required": true,
+            "validate": {
+              "enum": [
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE"
+              ]
+            }
+          },
+          {
+            "name": "headers",
+            "spec": {
+              "name": "value",
+              "spec": [
+                {
+                  "name": "key",
+                  "type": "text",
+                  "label": "Key"
+                },
+                {
+                  "name": "value",
+                  "type": "text",
+                  "label": "Value"
+                }
+              ],
+              "type": "collection",
+              "label": "Header"
+            },
+            "type": "array",
+            "label": "Headers"
+          },
+          {
+            "name": "qs",
+            "spec": {
+              "name": "value",
+              "spec": [
+                {
+                  "name": "key",
+                  "type": "text",
+                  "label": "Key"
+                },
+                {
+                  "name": "value",
+                  "type": "text",
+                  "label": "Value"
+                }
+              ],
+              "type": "collection",
+              "label": "Parameter"
+            },
+            "type": "array",
+            "label": "Query string"
+          },
+          {
+            "name": "body",
+            "type": "any",
+            "label": "Body"
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "module": "telegram:SendReplyMessage",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "New hot lead (row {{1.row}})\nName: {{1.name}}\nEmail: {{1.email}}\nCompany: {{1.company}}\nBudget: {{1.budget}}\n{{1.message}}",
+        "messageThreadId": "",
+        "parseMode": "",
+        "replyToMessageId": "",
+        "replyMarkupAssembleType": "reply_markup_enter",
+        "replyMarkup": ""
+      },
+      "metadata": {
+        "designer": {
+          "x": 1500,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTCONN__",
+            "type": "account:telegram",
+            "label": "Connection",
+            "required": true
+          }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": true,
+      "slots": null,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": {
+      "orphans": []
+    },
+    "zone": "eu1.make.com",
+    "notes": []
+  }
+}
